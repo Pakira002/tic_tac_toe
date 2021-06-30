@@ -28,8 +28,8 @@ defmodule TicTacToe.Console do
 
       case parse_move(move) do
         :quit -> System.halt(0)
-        {x, y} when is_integer(x) and is_integer(y) -> Game.put_mark(x, y)
-        _ -> IO.puts("Syntax error.")
+        {x, y} when is_integer(x) and is_integer(y) -> move(x, y)
+        _ -> Game.set_last_error("Syntax error.")
       end
 
       Process.send(__MODULE__, :process_command, [])
@@ -59,13 +59,29 @@ defmodule TicTacToe.Console do
   defp do_parse_move(_), do: :error
 
   defp refresh_screen() do
+    IO.puts("\e[2J")
     grid = Game.get_grid()
     IO.puts(Grid.render(grid))
     IO.puts("\n")
   end
 
   defp get_prompt() do
-    "Player "<> Player.to_string(Game.get_turn())<>", enter your move> "
+    prompt = 
+      "Player "<> Player.to_string(Game.get_turn())<>", enter your move> "
+    if error_message = Game.take_last_error() do
+      error_message <> " " <> prompt
+    else
+      prompt
+    end
   end
   
+  defp move(x,y) do
+    grid = Game.get_grid()
+
+    if Grid.valid_move?(grid,x,y) do
+      Game.put_mark(x, y)
+    else
+      Game.set_last_error("Invalid move.")
+    end
+  end
 end
